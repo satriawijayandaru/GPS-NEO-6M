@@ -14,6 +14,7 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 
 void setup(){
   Serial.begin(9600);
+  delay(1000);
   Serial.println("GPS START");
   ss.begin(GPSBaud);
   changeFrequency();
@@ -27,8 +28,7 @@ void setup(){
 }
 
 void loop(){
-  GPSgetData();
-  
+  GPSgetData(); 
 }
 
 void Display(){
