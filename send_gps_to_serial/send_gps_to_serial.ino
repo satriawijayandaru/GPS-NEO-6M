@@ -19,6 +19,7 @@ void setup() {
   Serial2.begin(9600);
   Serial.println("GPS START");
   Serial2.println("GPS Positioning");
+  Serial.println("GPS Positioning");
   ss.begin(GPSBaud);
   //  changeFrequency();
   delay(100);
@@ -157,7 +158,7 @@ void sendSerialData() {
   Serial2.print("Coordinate arr= ");
 
   Serial2.println(coordinate);
-  Serial.println(typeof(coordinateLat));
+  
   Serial2.println();
   //  Serial2.println(gps.location.lat(), 30);
 }
