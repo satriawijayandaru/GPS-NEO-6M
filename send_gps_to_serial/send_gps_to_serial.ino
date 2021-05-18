@@ -3,7 +3,10 @@
 
 static const uint32_t GPSBaud = 9600;
 //String coordinate;
+char coordinateLat[10];
+char coordinateLng[10];
 char coordinate[10];
+char latStr[10];
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
@@ -17,7 +20,7 @@ void setup() {
   Serial.println("GPS START");
   Serial2.println("GPS Positioning");
   ss.begin(GPSBaud);
-//  changeFrequency();
+  //  changeFrequency();
   delay(100);
   ss.flush();
 }
@@ -131,17 +134,32 @@ void GPSgetData() {
       Serial.println(gps.hdop.value());
       Serial.println();
 
+      
+      dtostrf(gps.location.lat(), 6, 6, coordinateLat);
+      dtostrf(gps.location.lng(), 6, 6, coordinateLng);
+
+
+      //      coordinate += "this is coordinate now = ";
+      //      coordinate += (gps.location.lat());
 
 
       sendSerialData();
-      //      Display();
     }
   }
 }
 
+
 void sendSerialData() {
-  Serial2.print("Coordinate = ");
-  Serial2.println(gps.location.lat(), 15);
+  Serial2.print("Latitude = ");
+  Serial2.println(coordinateLat);
+  Serial2.print("Longitude = ");
+  Serial2.println(coordinateLng);
+  Serial2.print("Coordinate arr= ");
+
+  Serial2.println(coordinate);
+  Serial.println(typeof(coordinateLat));
+  Serial2.println();
+  //  Serial2.println(gps.location.lat(), 30);
 }
 
 
