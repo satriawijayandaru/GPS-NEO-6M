@@ -21,6 +21,7 @@ void setup() {
   Serial2.println("GPS Positioning");
   Serial.println("GPS Positioning");
   ss.begin(GPSBaud);
+  pinMode(13, OUTPUT);
   //  changeFrequency();
   delay(100);
   ss.flush();
@@ -35,6 +36,7 @@ void GPSgetData() {
   while (ss.available() > 0) {
     gps.encode(ss.read());
     if (gps.location.isUpdated()) {
+      digitalWrite(13, HIGH);
       // Latitude in degrees (double)
       Serial.print("Latitude= ");
       Serial.print(gps.location.lat(), 6);
@@ -145,6 +147,7 @@ void GPSgetData() {
 
 
       sendSerialData();
+      digitalWrite(13, LOW);
     }
   }
 }
