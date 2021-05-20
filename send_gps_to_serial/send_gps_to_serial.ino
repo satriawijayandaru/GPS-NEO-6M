@@ -15,8 +15,8 @@ TinyGPSPlus gps;
 
 
 void setup() {
-  Serial.begin(9600);
-  Serial2.begin(9600);
+  Serial.begin(115200);
+  Serial2.begin(115200);
   Serial.println("GPS START");
   Serial2.println("GPS Positioning");
   Serial.println("GPS Positioning");
