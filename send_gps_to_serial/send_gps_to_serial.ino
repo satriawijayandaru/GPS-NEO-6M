@@ -2,10 +2,11 @@
 #include <TinyGPS++.h>
 
 static const uint32_t GPSBaud = 9600;
-//String coordinate;
+
 char coordinateLat[10];
 char coordinateLng[10];
-char coordinate[10];
+//char coordinate[20];
+String coordinate;
 char latStr[10];
 // The TinyGPS++ object
 TinyGPSPlus gps;
@@ -136,34 +137,41 @@ void GPSgetData() {
       Serial.print("HDOP = ");
       Serial.println(gps.hdop.value());
       Serial.println();
-
-      
-      dtostrf(gps.location.lat(), 6, 6, coordinateLat);
-      dtostrf(gps.location.lng(), 6, 6, coordinateLng);
-
-
-      //      coordinate += "this is coordinate now = ";
-      //      coordinate += (gps.location.lat());
-
-
-      sendSerialData();
+      dataPreparation();
       digitalWrite(13, LOW);
     }
   }
 }
 
+void dataPreparation() {
+  //CONVERT DOUBLE > CHAR > CONCATE STRING
+
+  dtostrf(gps.location.lat(), 6, 6, coordinateLat);
+  dtostrf(gps.location.lng(), 6, 6, coordinateLng);
+  coordinate += coordinateLat;
+  coordinate += ",";
+  coordinate += coordinateLng;
+
+
+
+
+  sendSerialData();
+
+  //CLEAR COORDINATE BUFFER
+  coordinate = "";
+}
 
 void sendSerialData() {
-  Serial2.print("Latitude = ");
+  Serial2.print("Latitude   = ");
   Serial2.println(coordinateLat);
-  Serial2.print("Longitude = ");
+  Serial2.print("Longitude  = ");
   Serial2.println(coordinateLng);
-  Serial2.print("Coordinate arr= ");
-
+  Serial2.print("Satelite   = ");
+  Serial2.println(gps.satellites.value());
+  Serial2.print("Coordinate = ");
   Serial2.println(coordinate);
-  
+
   Serial2.println();
-  //  Serial2.println(gps.location.lat(), 30);
 }
 
 
