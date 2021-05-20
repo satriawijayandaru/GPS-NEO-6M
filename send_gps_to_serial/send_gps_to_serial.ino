@@ -8,6 +8,10 @@ char coordinateLng[10];
 //char coordinate[20];
 String coordinate;
 char latStr[10];
+String plusminLat;
+int degLat, bilionthsLat;
+String plusminLng;
+int degLng, bilionthsLng;
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
@@ -145,12 +149,27 @@ void GPSgetData() {
 
 void dataPreparation() {
   //CONVERT DOUBLE > CHAR > CONCATE STRING
+  plusminLat = (gps.location.rawLat().negative ? "-" : "+");
+  degLat = (gps.location.rawLat().deg);
+  bilionthsLat = (gps.location.rawLat().billionths);
+
+  plusminLng = (gps.location.rawLng().negative ? "-" : "+");
+  degLng = (gps.location.rawLng().deg);
+  bilionthsLng = (gps.location.rawLng().billionths);
 
   dtostrf(gps.location.lat(), 6, 6, coordinateLat);
   dtostrf(gps.location.lng(), 6, 6, coordinateLng);
-  coordinate += coordinateLat;
+  coordinate += plusminLat;
+  coordinate += degLat;
   coordinate += ",";
-  coordinate += coordinateLng;
+  coordinate += bilionthsLat;
+  coordinate += ",";
+  coordinate += plusminLng;
+  coordinate += degLng;
+  coordinate += ",";
+  coordinate += bilionthsLng;
+  
+  //  coordinate += coordinateLng;
 
 
 
