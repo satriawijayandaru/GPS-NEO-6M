@@ -6,7 +6,9 @@ static const uint32_t GPSBaud = 9600;
 char coordinateLat[10];
 char coordinateLng[10];
 //char coordinate[20];
-String coordinate;
+String coordinateCSV;
+String coordinateGMaps;
+String formatted;
 char latStr[10];
 String plusminLat;
 int degLat, bilionthsLat;
@@ -149,26 +151,40 @@ void GPSgetData() {
 
 void dataPreparation() {
   //CONVERT DOUBLE > CHAR > CONCATE STRING
-  plusminLat = (gps.location.rawLat().negative ? "-" : "+");
+  plusminLat = (gps.location.rawLat().negative ? "-" : "");
   degLat = (gps.location.rawLat().deg);
   bilionthsLat = (gps.location.rawLat().billionths);
 
-  plusminLng = (gps.location.rawLng().negative ? "-" : "+");
+  plusminLng = (gps.location.rawLng().negative ? "-" : "");
   degLng = (gps.location.rawLng().deg);
   bilionthsLng = (gps.location.rawLng().billionths);
 
   dtostrf(gps.location.lat(), 6, 6, coordinateLat);
   dtostrf(gps.location.lng(), 6, 6, coordinateLng);
-  coordinate += plusminLat;
-  coordinate += degLat;
-  coordinate += ",";
-  coordinate += bilionthsLat;
-  coordinate += ",";
-  coordinate += plusminLng;
-  coordinate += degLng;
-  coordinate += ",";
-  coordinate += bilionthsLng;
-  
+  coordinateCSV += plusminLat;
+  coordinateCSV += degLat;
+  coordinateCSV += ",";
+  coordinateCSV += bilionthsLat;
+  coordinateCSV += ",";
+  coordinateCSV += plusminLng;
+  coordinateCSV += degLng;
+  coordinateCSV += ",";
+  coordinateCSV += bilionthsLng;
+
+
+  coordinateGMaps += plusminLat;
+  coordinateGMaps += degLat;
+  coordinateGMaps += ".";
+  coordinateGMaps += bilionthsLat;
+  coordinateGMaps += ",";
+  coordinateGMaps += plusminLng;
+  coordinateGMaps += degLng;
+  coordinateGMaps += ".";
+  coordinateGMaps += bilionthsLng;
+
+  formatted += coordinateCSV;
+  formatted += ",";
+  formatted += gps.satellites.value();
   //  coordinate += coordinateLng;
 
 
@@ -177,19 +193,24 @@ void dataPreparation() {
   sendSerialData();
 
   //CLEAR COORDINATE BUFFER
-  coordinate = "";
+  coordinateCSV = "";
+  coordinateGMaps = "";
+  formatted = "";
 }
 
 void sendSerialData() {
-  Serial2.print("Latitude   = ");
+  Serial2.print("Latitude        = ");
   Serial2.println(coordinateLat);
-  Serial2.print("Longitude  = ");
+  Serial2.print("Longitude       = ");
   Serial2.println(coordinateLng);
-  Serial2.print("Satelite   = ");
+  Serial2.print("Satelite        = ");
   Serial2.println(gps.satellites.value());
-  Serial2.print("Coordinate = ");
-  Serial2.println(coordinate);
-
+  Serial2.print("Coordinate CSV  = ");
+  Serial2.println(coordinateCSV);
+  Serial2.print("Coordinate Maps = ");
+  Serial2.println(coordinateGMaps);
+  Serial2.print("CSV Formatted   = ");
+  Serial2.println(formatted);
   Serial2.println();
 }
 
