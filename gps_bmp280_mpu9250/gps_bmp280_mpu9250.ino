@@ -32,6 +32,8 @@ double altitudeBMP;
 double tempBMP;
 double altitudeAVG;
 
+int mpuRoll, mpuPitch, mpuYaw;
+
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
@@ -43,11 +45,13 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(1000000);
   Serial.println("GPS START");
-  Serial2.println("GPS Positioning");
-  Serial.println("GPS Positioning");
+
+
   ss.begin(GPSBaud);
+  Wire.begin();
+  mpu.setup(0x68);
   pinMode(13, OUTPUT);
-  //  changeFrequency();
+  changeFrequency();
   delay(100);
   ss.flush();
 
@@ -64,12 +68,21 @@ void setup() {
                   Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 
   bmp_temp->printSensorDetails();
+
+  delay(500);
+    Serial2.println("MPU Calibrating");
+    mpu.calibrateAccelGyro();
+    mpu.calibrateMag();
+    mpu.printCalibration();
+
+  Serial.println("GPS Positioning");
+  Serial2.println("GPS Positioning");
+  //  delay(2000);
 }
 
 void loop() {
 
   GPSgetData();
-
 }
 
 void GPSgetData() {
@@ -206,6 +219,13 @@ void dataPreparation() {
 
   altitudeAVG = (((bmp.readAltitude(1013.25)) + gps.altitude.meters()) / 2);
 
+  if (mpu.update()) {
+    mpuRoll = (mpu.getRoll());
+    mpuPitch = (mpu.getPitch());
+    mpuYaw = (mpu.getYaw());
+  }
+
+
   coordinateCSV += plusminLat;
   coordinateCSV += degLat;
   coordinateCSV += ",";
@@ -238,6 +258,11 @@ void dataPreparation() {
   formatted += ",";
   formatted += altitudeAVG;   //Average Altitude from GPS and Altimeter sensor
   formatted += ",";
+  formatted += mpuRoll;
+  formatted += ",";
+  formatted += mpuPitch;
+  formatted += ",";
+  formatted += mpuYaw;
   //  formatted += tempBMP;
   //  coordinate += coordinateLng;
 
@@ -270,13 +295,18 @@ void sendSerialData() {
   Serial2.println(gpsAlt);
   Serial2.print("Altitude Average    = ");
   Serial2.println(altitudeAVG);
-  //  Serial2.println(((bmp.readAltitude(1013.25))+gps.altitude.meters())/2);
+  Serial2.print("MPU ROLL            = ");
+  Serial2.println(mpuRoll);
+  Serial2.print("MPU PITCH           = ");
+  Serial2.println(mpuPitch);
+  Serial2.print("MPU YAW             = ");
+  Serial2.println(mpuYaw);
   Serial2.println();
   Serial2.println();
   Serial2.println("===================================================================");
   //  Serial2.print("                  ");
-  Serial2.println("LATITUDE     LONGITUDE     PRESS  ALT-s  ALT-g  ALT-a");
-  //Serial2.priln("-6,580769333,106,890728500,980.78,273.88,255.80,264.84,27.89");
+  Serial2.println("LATITUDE     LONGITUDE     PRESS  ALT-s  ALT-g  ALT-a  R  P  Y");
+  //Serial2.priln("-6.580892333,106.890631500,980.45,276.69,287.70,282.20,0,-3,43");
   //  Serial2.print("CSV Formatted   = ");
   Serial2.println(formatted);
   Serial2.println(); Serial2.println(); Serial2.println(); Serial2.println();
