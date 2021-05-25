@@ -1,5 +1,10 @@
 
 #include <TinyGPS++.h>
+#include <Adafruit_BMP280.h>
+
+Adafruit_BMP280 bmp; // use I2C interface
+Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
+Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
 
 static const uint32_t GPSBaud = 9600;
 
@@ -9,11 +14,13 @@ char coordinateLng[10];
 String coordinateCSV;
 String coordinateGMaps;
 String formatted;
+
 char latStr[10];
 String plusminLat;
 int degLat, bilionthsLat;
 String plusminLng;
 int degLng, bilionthsLng;
+
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
@@ -32,6 +39,20 @@ void setup() {
   //  changeFrequency();
   delay(100);
   ss.flush();
+
+  if (!bmp.begin()) {
+    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
+    while (1) delay(10);
+  }
+
+  /* Default settings from datasheet. */
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+
+  bmp_temp->printSensorDetails();
 }
 
 void loop() {
@@ -161,6 +182,11 @@ void dataPreparation() {
 
   dtostrf(gps.location.lat(), 6, 6, coordinateLat);
   dtostrf(gps.location.lng(), 6, 6, coordinateLng);
+
+  sensors_event_t temp_event, pressure_event;
+  bmp_temp->getEvent(&temp_event);
+  bmp_pressure->getEvent(&pressure_event);
+  
   coordinateCSV += plusminLat;
   coordinateCSV += degLat;
   coordinateCSV += ",";
@@ -185,6 +211,8 @@ void dataPreparation() {
   formatted += coordinateCSV;
   formatted += ",";
   formatted += gps.satellites.value();
+  formatted += ",";
+  formatted += (pressure_event.pressure);
   //  coordinate += coordinateLng;
 
 
@@ -222,6 +250,11 @@ void sendPacket(byte *packet, byte len) {
   }
 }
 
+void bmp280(){
+  sensors_event_t temp_event, pressure_event;
+  bmp_temp->getEvent(&temp_event);
+  bmp_pressure->getEvent(&pressure_event);
+}
 void changeFrequency() {
   byte packet[] = {
     0xB5, //
