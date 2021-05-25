@@ -1,6 +1,10 @@
 
 #include <TinyGPS++.h>
 #include <Adafruit_BMP280.h>
+#include "MPU9250.h"
+
+MPU9250 mpu;
+
 
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
