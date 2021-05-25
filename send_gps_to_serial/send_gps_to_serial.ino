@@ -21,6 +21,9 @@ int degLat, bilionthsLat;
 String plusminLng;
 int degLng, bilionthsLng;
 
+String pressureBMP;
+String altitudeBMP;
+
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
