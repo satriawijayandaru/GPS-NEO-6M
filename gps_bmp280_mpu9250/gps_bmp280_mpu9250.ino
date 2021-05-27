@@ -15,15 +15,15 @@ static const uint32_t GPSBaud = 9600;
 char coordinateLat[10];
 char coordinateLng[10];
 char gpsAlt[5];
-//char coordinate[20];
+char latStr[10];
+
 String coordinateCSV;
 String coordinateGMaps;
 String formatted;
-
-char latStr[10];
 String plusminLat;
-int degLat, bilionthsLat;
 String plusminLng;
+
+int degLat, bilionthsLat;
 int degLng, bilionthsLng;
 
 
@@ -37,11 +37,10 @@ int mpuRoll, mpuPitch, mpuYaw;
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
-// The serial connection to the GPS device`
-#define ss Serial3
+// Define Serial Connection
 #define internalSerial Serial
 #define externalSerial Serial2
-
+#define ss Serial3
 
 void setup() {
   internalSerial.begin(115200);
