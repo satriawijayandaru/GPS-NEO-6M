@@ -39,22 +39,24 @@ TinyGPSPlus gps;
 
 // Define Serial Connection
 #define internalSerial Serial
-#define externalSerial Serial2
-#define ss Serial3
+#define externalSerial Serial3
+#define externalSerialDebug Serial4
+#define gpsSerial Serial2
 
 void setup() {
-  internalSerial.begin(115200);
+  internalSerial.begin(2000000);
   externalSerial.begin(2000000);
+  externalSerialDebug.begin(2000000);
   internalSerial.println("GPS START");
 
 
-  ss.begin(GPSBaud);
+  gpsSerial.begin(GPSBaud);
   Wire.begin();
   mpu.setup(0x68);
   pinMode(13, OUTPUT);
   changeFrequency();
   delay(100);
-  ss.flush();
+  gpsSerial.flush();
 
   if (!bmp.begin()) {
     internalSerial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
@@ -88,8 +90,8 @@ void loop() {
 
 void GPSgetData() {
   // This sketch displays information every time a new sentence is correctly encoded.
-  while (ss.available() > 0) {
-    gps.encode(ss.read());
+  while (gpsSerial.available() > 0) {
+    gps.encode(gpsSerial.read());
     if (gps.location.isUpdated()) {
       digitalWrite(13, HIGH);
       // Latitude in degrees (double)
@@ -279,45 +281,46 @@ void dataPreparation() {
 }
 
 void sendSerialData() {
-  externalSerial.println(); externalSerial.println(); externalSerial.println(); externalSerial.println();
-  externalSerial.print("Latitude            = ");
-  externalSerial.println(coordinateLat);
-  externalSerial.print("Longitude           = ");
-  externalSerial.println(coordinateLng);
-  externalSerial.print("Satelite            = ");
-  externalSerial.println(gps.satellites.value());
-  //  externalSerial.print("Coordinate CSV      = ");
-  //  externalSerial.println(coordinateCSV);
-  externalSerial.print("Coordinate Maps     = ");
-  externalSerial.println(coordinateGMaps);
-  externalSerial.print("Altitude Sensor     = ");
-  externalSerial.println(altitudeBMP);
-  externalSerial.print("Altitude GPS        = ");
-  externalSerial.println(gpsAlt);
-  externalSerial.print("Altitude Average    = ");
-  externalSerial.println(altitudeAVG);
-  externalSerial.print("MPU ROLL            = ");
-  externalSerial.println(mpuRoll);
-  externalSerial.print("MPU PITCH           = ");
-  externalSerial.println(mpuPitch);
-  externalSerial.print("MPU YAW             = ");
-  externalSerial.println(mpuYaw);
-  externalSerial.println();
-  externalSerial.println();
-  externalSerial.println("===================================================================");
-  //  externalSerial.print("                  ");
-  externalSerial.println("LATITUDE     LONGITUDE     PRESS  ALT-s  ALT-g  ALT-a  R  P  Y");
-  //externalSerial.priln("-6.580892333,106.890631500,980.45,276.69,287.70,282.20,0,-3,43");
-  //  externalSerial.print("CSV Formatted   = ");
+  internalSerial.println(); internalSerial.println(); internalSerial.println(); internalSerial.println();
+  internalSerial.print("Latitude            = ");
+  internalSerial.println(coordinateLat);
+  internalSerial.print("Longitude           = ");
+  internalSerial.println(coordinateLng);
+  internalSerial.print("Satelite            = ");
+  internalSerial.println(gps.satellites.value());
+  //  internalSerial.print("Coordinate CSV      = ");
+  //  internalSerial.println(coordinateCSV);
+  internalSerial.print("Coordinate Maps     = ");
+  internalSerial.println(coordinateGMaps);
+  internalSerial.print("Altitude Sensor     = ");
+  internalSerial.println(altitudeBMP);
+  internalSerial.print("Altitude GPS        = ");
+  internalSerial.println(gpsAlt);
+  internalSerial.print("Altitude Average    = ");
+  internalSerial.println(altitudeAVG);
+  internalSerial.print("MPU ROLL            = ");
+  internalSerial.println(mpuRoll);
+  internalSerial.print("MPU PITCH           = ");
+  internalSerial.println(mpuPitch);
+  internalSerial.print("MPU YAW             = ");
+  internalSerial.println(mpuYaw);
+  internalSerial.println();
+  internalSerial.println();
+  internalSerial.println("===================================================================");
+  //  internalSerial.print("                  ");
+  internalSerial.println("LATITUDE     LONGITUDE     PRESS  ALT-s  ALT-g  ALT-a  R  P  Y");
+  //internalSerial.priln("-6.580892333,106.890631500,980.45,276.69,287.70,282.20,0,-3,43");
+  //  internalSerial.print("CSV Formatted   = ");
+  internalSerial.println(formatted);
   externalSerial.println(formatted);
-  externalSerial.println(); externalSerial.println(); externalSerial.println(); externalSerial.println();
+  externalSerialDebug.println(formatted);
 }
 
 
 void sendPacket(byte *packet, byte len) {
   for (byte i = 0; i < len; i++)
   {
-    ss.write(packet[i]); // GPS is HardwareSerial
+    gpsSerial.write(packet[i]); // GPS is HardwareSerial
   }
 }
 
