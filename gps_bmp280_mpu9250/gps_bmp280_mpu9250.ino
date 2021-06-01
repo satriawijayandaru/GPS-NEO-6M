@@ -2,6 +2,7 @@
 #include <TinyGPS++.h>
 #include <Adafruit_BMP280.h>
 #include "MPU9250.h"
+#include "eeprom_utils.h"
 
 MPU9250 mpu;
 
@@ -11,19 +12,21 @@ Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
 Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
 
 static const uint32_t GPSBaud = 9600;
+int SerialBaud = 2000000;
 
 char coordinateLat[10];
 char coordinateLng[10];
 char gpsAlt[5];
-//char coordinate[20];
+char latStr[10];
+char speedGPS[10];
+
 String coordinateCSV;
 String coordinateGMaps;
 String formatted;
-
-char latStr[10];
 String plusminLat;
-int degLat, bilionthsLat;
 String plusminLng;
+
+int degLat, bilionthsLat;
 int degLng, bilionthsLng;
 
 
@@ -37,26 +40,30 @@ int mpuRoll, mpuPitch, mpuYaw;
 // The TinyGPS++ object
 TinyGPSPlus gps;
 
-// The serial connection to the GPS device
-#define ss Serial3
-
+// Define Serial Connection
+#define internalSerial Serial
+#define externalSerial Serial3
+#define externalSerialDebug Serial4
+#define gpsSerial Serial2
 
 void setup() {
-  Serial.begin(115200);
-  Serial2.begin(1000000);
-  Serial.println("GPS START");
+  internalSerial.begin(SerialBaud);
+  externalSerial.begin(SerialBaud);
+  externalSerialDebug.begin(SerialBaud);
+  gpsSerial.begin(GPSBaud);
+  internalSerial.println("GPS START");
 
 
-  ss.begin(GPSBaud);
+  
   Wire.begin();
   mpu.setup(0x68);
   pinMode(13, OUTPUT);
   changeFrequency();
   delay(100);
-  ss.flush();
+  gpsSerial.flush();
 
   if (!bmp.begin()) {
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
+    internalSerial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
     while (1) delay(10);
   }
 
@@ -70,126 +77,125 @@ void setup() {
   bmp_temp->printSensorDetails();
 
   delay(500);
-    Serial2.println("MPU Calibrating");
-    mpu.calibrateAccelGyro();
-    mpu.calibrateMag();
-    mpu.printCalibration();
-
-  Serial.println("GPS Positioning");
-  Serial2.println("GPS Positioning");
+  //  internalSerial.println("MPU Calibrating");
+  //  mpu.calibrateAccelGyro();
+  //  mpu.calibrateMag();
+  //  mpu.printCalibration();
+  loadCalibration();
+  internalSerial.println("GPS Positioning");
+  externalSerial.println("GPS Positioning");
   //  delay(2000);
 }
 
 void loop() {
-
   GPSgetData();
 }
 
 void GPSgetData() {
   // This sketch displays information every time a new sentence is correctly encoded.
-  while (ss.available() > 0) {
-    gps.encode(ss.read());
+  while (gpsSerial.available() > 0) {
+    gps.encode(gpsSerial.read());
     if (gps.location.isUpdated()) {
       digitalWrite(13, HIGH);
-      // Latitude in degrees (double)
-      Serial.print("Latitude= ");
-      Serial.print(gps.location.lat(), 6);
-      // Longitude in degrees (double)
-      Serial.print(" Longitude= ");
-      Serial.println(gps.location.lng(), 6);
-
-      // Raw latitude in whole degrees
-      Serial.print("Raw latitude = ");
-      Serial.print(gps.location.rawLat().negative ? "-" : "+");
-      Serial.println(gps.location.rawLat().deg);
-      // ... and billionths (u16/u32)
-      Serial.println(gps.location.rawLat().billionths);
-
-      // Raw longitude in whole degrees
-      Serial.print("Raw longitude = ");
-      Serial.print(gps.location.rawLng().negative ? "-" : "+");
-      Serial.println(gps.location.rawLng().deg);
-      // ... and billionths (u16/u32)
-      Serial.println(gps.location.rawLng().billionths);
-
-      // Raw date in DDMMYY format (u32)
-      Serial.print("Raw date DDMMYY = ");
-      Serial.println(gps.date.value());
-
-      // Year (2000+) (u16)
-      Serial.print("Year = ");
-      Serial.println(gps.date.year());
-      // Month (1-12) (u8)
-      Serial.print("Month = ");
-      Serial.println(gps.date.month());
-      // Day (1-31) (u8)
-      Serial.print("Day = ");
-      Serial.println(gps.date.day());
-
-      // Raw time in HHMMSSCC format (u32)
-      Serial.print("Raw time in HHMMSSCC = ");
-      Serial.println(gps.time.value());
-
-      // Hour (0-23) (u8)
-      Serial.print("Hour = ");
-      Serial.println(gps.time.hour());
-      // Minute (0-59) (u8)
-      Serial.print("Minute = ");
-      Serial.println(gps.time.minute());
-      // Second (0-59) (u8)
-      Serial.print("Second = ");
-      Serial.println(gps.time.second());
-      // 100ths of a second (0-99) (u8)
-      Serial.print("Centisecond = ");
-      Serial.println(gps.time.centisecond());
-
-      // Raw speed in 100ths of a knot (i32)
-      Serial.print("Raw speed in 100ths/knot = ");
-      Serial.println(gps.speed.value());
-      // Speed in knots (double)
-      Serial.print("Speed in knots/h = ");
-      Serial.println(gps.speed.knots());
-      // Speed in miles per hour (double)
-      Serial.print("Speed in miles/h = ");
-      Serial.println(gps.speed.mph());
-      // Speed in meters per second (double)
-      Serial.print("Speed in m/s = ");
-      Serial.println(gps.speed.mps());
-      // Speed in kilometers per hour (double)
-      Serial.print("Speed in km/h = ");
-      Serial.println(gps.speed.kmph());
-
-      // Raw course in 100ths of a degree (i32)
-      Serial.print("Raw course in degrees = ");
-      Serial.println(gps.course.value());
-      // Course in degrees (double)
-      Serial.print("Course in degrees = ");
-      Serial.println(gps.course.deg());
-
-      // Raw altitude in centimeters (i32)
-      Serial.print("Raw altitude in centimeters = ");
-      Serial.println(gps.altitude.value());
-      // Altitude in meters (double)
-      Serial.print("Altitude in meters = ");
-      Serial.println(gps.altitude.meters());
-      // Altitude in miles (double)
-      Serial.print("Altitude in miles = ");
-      Serial.println(gps.altitude.miles());
-      // Altitude in kilometers (double)
-      Serial.print("Altitude in kilometers = ");
-      Serial.println(gps.altitude.kilometers());
-      // Altitude in feet (double)
-      Serial.print("Altitude in feet = ");
-      Serial.println(gps.altitude.feet());
-
-      // Number of satellites in use (u32)
-      Serial.print("Number os satellites in use = ");
-      Serial.println(gps.satellites.value());
-
-      // Horizontal Dim. of Precision (100ths-i32)
-      Serial.print("HDOP = ");
-      Serial.println(gps.hdop.value());
-      Serial.println();
+//      // Latitude in degrees (double)
+//      internalSerial.print("Latitude= ");
+//      internalSerial.print(gps.location.lat(), 6);
+//      // Longitude in degrees (double)
+//      internalSerial.print(" Longitude= ");
+//      internalSerial.println(gps.location.lng(), 6);
+//
+//      // Raw latitude in whole degrees
+//      internalSerial.print("Raw latitude = ");
+//      internalSerial.print(gps.location.rawLat().negative ? "-" : "+");
+//      internalSerial.println(gps.location.rawLat().deg);
+//      // ... and billionths (u16/u32)
+//      internalSerial.println(gps.location.rawLat().billionths);
+//
+//      // Raw longitude in whole degrees
+//      internalSerial.print("Raw longitude = ");
+//      internalSerial.print(gps.location.rawLng().negative ? "-" : "+");
+//      internalSerial.println(gps.location.rawLng().deg);
+//      // ... and billionths (u16/u32)
+//      internalSerial.println(gps.location.rawLng().billionths);
+//
+//      // Raw date in DDMMYY format (u32)
+//      internalSerial.print("Raw date DDMMYY = ");
+//      internalSerial.println(gps.date.value());
+//
+//      // Year (2000+) (u16)
+//      internalSerial.print("Year = ");
+//      internalSerial.println(gps.date.year());
+//      // Month (1-12) (u8)
+//      internalSerial.print("Month = ");
+//      internalSerial.println(gps.date.month());
+//      // Day (1-31) (u8)
+//      internalSerial.print("Day = ");
+//      internalSerial.println(gps.date.day());
+//
+//      // Raw time in HHMMSSCC format (u32)
+//      internalSerial.print("Raw time in HHMMSSCC = ");
+//      internalSerial.println(gps.time.value());
+//
+//      // Hour (0-23) (u8)
+//      internalSerial.print("Hour = ");
+//      internalSerial.println(gps.time.hour());
+//      // Minute (0-59) (u8)
+//      internalSerial.print("Minute = ");
+//      internalSerial.println(gps.time.minute());
+//      // Second (0-59) (u8)
+//      internalSerial.print("Second = ");
+//      internalSerial.println(gps.time.second());
+//      // 100ths of a second (0-99) (u8)
+//      internalSerial.print("Centisecond = ");
+//      internalSerial.println(gps.time.centisecond());
+//
+//      // Raw speed in 100ths of a knot (i32)
+//      internalSerial.print("Raw speed in 100ths/knot = ");
+//      internalSerial.println(gps.speed.value());
+//      // Speed in knots (double)
+//      internalSerial.print("Speed in knots/h = ");
+//      internalSerial.println(gps.speed.knots());
+//      // Speed in miles per hour (double)
+//      internalSerial.print("Speed in miles/h = ");
+//      internalSerial.println(gps.speed.mph());
+//      // Speed in meters per second (double)
+//      internalSerial.print("Speed in m/s = ");
+//      internalSerial.println(gps.speed.mps());
+//      // Speed in kilometers per hour (double)
+//      internalSerial.print("Speed in km/h = ");
+//      internalSerial.println(gps.speed.kmph());
+//
+//      // Raw course in 100ths of a degree (i32)
+//      internalSerial.print("Raw course in degrees = ");
+//      internalSerial.println(gps.course.value());
+//      // Course in degrees (double)
+//      internalSerial.print("Course in degrees = ");
+//      internalSerial.println(gps.course.deg());
+//
+//      // Raw altitude in centimeters (i32)
+//      internalSerial.print("Raw altitude in centimeters = ");
+//      internalSerial.println(gps.altitude.value());
+//      // Altitude in meters (double)
+//      internalSerial.print("Altitude in meters = ");
+//      internalSerial.println(gps.altitude.meters());
+//      // Altitude in miles (double)
+//      internalSerial.print("Altitude in miles = ");
+//      internalSerial.println(gps.altitude.miles());
+//      // Altitude in kilometers (double)
+//      internalSerial.print("Altitude in kilometers = ");
+//      internalSerial.println(gps.altitude.kilometers());
+//      // Altitude in feet (double)
+//      internalSerial.print("Altitude in feet = ");
+//      internalSerial.println(gps.altitude.feet());
+//
+//      // Number of satellites in use (u32)
+//      internalSerial.print("Number os satellites in use = ");
+//      internalSerial.println(gps.satellites.value());
+//
+//      // Horizontal Dim. of Precision (100ths-i32)
+//      internalSerial.print("HDOP = ");
+//      internalSerial.println(gps.hdop.value());
+//      internalSerial.println();
       dataPreparation();
       digitalWrite(13, LOW);
     }
@@ -198,17 +204,18 @@ void GPSgetData() {
 
 void dataPreparation() {
   //CONVERT DOUBLE > CHAR > CONCATE STRING
-  plusminLat = (gps.location.rawLat().negative ? "-" : "");
-  degLat = (gps.location.rawLat().deg);
-  bilionthsLat = (gps.location.rawLat().billionths);
+//  plusminLat = (gps.location.rawLat().negative ? "-" : "");
+//  degLat = (gps.location.rawLat().deg);
+//  bilionthsLat = (gps.location.rawLat().billionths);
+//
+//  plusminLng = (gps.location.rawLng().negative ? "-" : "");
+//  degLng = (gps.location.rawLng().deg);
+//  bilionthsLng = (gps.location.rawLng().billionths);
 
-  plusminLng = (gps.location.rawLng().negative ? "-" : "");
-  degLng = (gps.location.rawLng().deg);
-  bilionthsLng = (gps.location.rawLng().billionths);
-
-  dtostrf(gps.location.lat(), 6, 6, coordinateLat);
-  dtostrf(gps.location.lng(), 6, 6, coordinateLng);
+  dtostrf(gps.location.lat(), 7, 7, coordinateLat);
+  dtostrf(gps.location.lng(), 7, 7, coordinateLng);
   dtostrf(gps.altitude.meters(), 2, 2, gpsAlt);
+  dtostrf(gps.speed.mps(), 5, 5, speedGPS);
 
   sensors_event_t temp_event, pressure_event;
   bmp_temp->getEvent(&temp_event);
@@ -248,22 +255,33 @@ void dataPreparation() {
   coordinateGMaps += bilionthsLng;
 
   //  formatted += coordinateCSV;
-  formatted += coordinateGMaps;
+//  formatted += coordinateGMaps;
+  formatted += coordinateLat;
   formatted += ",";
-  formatted += (pressure_event.pressure);
+  formatted += coordinateLng;
   formatted += ",";
-  formatted += altitudeBMP;   //Altitude from Altimeter BMP280
+  formatted += (pressure_event.pressure);   //Pressure value from BMP280
   formatted += ",";
-  formatted += gpsAlt;        //Altitude from GPS data
+  formatted += altitudeBMP;                 //Altitude from Altimeter BMP280
   formatted += ",";
-  formatted += altitudeAVG;   //Average Altitude from GPS and Altimeter sensor
+  formatted += gpsAlt;                      //Altitude from GPS data
+  formatted += ",";
+  formatted += altitudeAVG;                 //Average Altitude from GPS and Altimeter sensor
+  formatted += ",";
+  formatted += gps.satellites.value();      //Connected GPS Satellite 
+  formatted += ",";
+  formatted += tempBMP;                     //Temperature from BMP280
+  formatted += ",";
+  formatted += speedGPS;                    //GPS Speed in meter per second
+  formatted += ",";
+  formatted += gps.hdop.value();
   formatted += ",";
   formatted += mpuRoll;
   formatted += ",";
   formatted += mpuPitch;
   formatted += ",";
   formatted += mpuYaw;
-  //  formatted += tempBMP;
+
   //  coordinate += coordinateLng;
 
 
@@ -278,45 +296,65 @@ void dataPreparation() {
 }
 
 void sendSerialData() {
-  Serial2.println(); Serial2.println(); Serial2.println(); Serial2.println();
-  Serial2.print("Latitude            = ");
-  Serial2.println(coordinateLat);
-  Serial2.print("Longitude           = ");
-  Serial2.println(coordinateLng);
-  Serial2.print("Satelite            = ");
-  Serial2.println(gps.satellites.value());
-  //  Serial2.print("Coordinate CSV      = ");
-  //  Serial2.println(coordinateCSV);
-  Serial2.print("Coordinate Maps     = ");
-  Serial2.println(coordinateGMaps);
-  Serial2.print("Altitude Sensor     = ");
-  Serial2.println(altitudeBMP);
-  Serial2.print("Altitude GPS        = ");
-  Serial2.println(gpsAlt);
-  Serial2.print("Altitude Average    = ");
-  Serial2.println(altitudeAVG);
-  Serial2.print("MPU ROLL            = ");
-  Serial2.println(mpuRoll);
-  Serial2.print("MPU PITCH           = ");
-  Serial2.println(mpuPitch);
-  Serial2.print("MPU YAW             = ");
-  Serial2.println(mpuYaw);
-  Serial2.println();
-  Serial2.println();
-  Serial2.println("===================================================================");
-  //  Serial2.print("                  ");
-  Serial2.println("LATITUDE     LONGITUDE     PRESS  ALT-s  ALT-g  ALT-a  R  P  Y");
-  //Serial2.priln("-6.580892333,106.890631500,980.45,276.69,287.70,282.20,0,-3,43");
-  //  Serial2.print("CSV Formatted   = ");
-  Serial2.println(formatted);
-  Serial2.println(); Serial2.println(); Serial2.println(); Serial2.println();
+  internalSerial.println();
+  internalSerial.println();
+  internalSerial.println();
+  internalSerial.println();
+  internalSerial.print("Time GMT 0          = ");
+  internalSerial.print(gps.time.hour());
+  internalSerial.print(":");
+  internalSerial.print(gps.time.minute());
+  internalSerial.print(":");
+  internalSerial.println(gps.time.second());
+  internalSerial.print("Time GMT +7         = ");
+  internalSerial.print(gps.time.hour() + 7);
+  internalSerial.print(":");
+  internalSerial.print(gps.time.minute());
+  internalSerial.print(":");
+  internalSerial.println(gps.time.second());
+  internalSerial.print("Latitude            = ");
+  internalSerial.println(coordinateLat);
+  internalSerial.print("Longitude           = ");
+  internalSerial.println(coordinateLng);
+  internalSerial.print("Satelite            = ");
+  internalSerial.println(gps.satellites.value());
+  internalSerial.print("Coordinate Maps     = ");
+  internalSerial.println(coordinateGMaps);
+  internalSerial.print("Altitude Sensor     = ");
+  internalSerial.println(altitudeBMP);
+  internalSerial.print("Altitude GPS        = ");
+  internalSerial.println(gpsAlt);
+  internalSerial.print("Altitude Average    = ");
+  internalSerial.println(altitudeAVG);
+  internalSerial.print("Speed in m/s        = ");
+  internalSerial.print(speedGPS);
+  internalSerial.println(" m/s");
+  internalSerial.print("Horizontal Accuracy = ");
+  internalSerial.println(gps.hdop.value());  
+  internalSerial.print("MPU ROLL            = ");
+  internalSerial.println(mpuRoll);
+  internalSerial.print("MPU PITCH           = ");
+  internalSerial.println(mpuPitch);
+  internalSerial.print("MPU YAW             = ");
+  internalSerial.println(mpuYaw);
+  internalSerial.println();
+  internalSerial.println();
+  internalSerial.println("===================================================================");
+  //  internalSerial.print("                  ");
+  internalSerial.println("LATITUDE   LONGITUDE   PRESS  ALT-s  ALT-g  ALT-a  S Temp  Speed HDOP  R  P  Y");
+  //internalSerial.priln("-6.5808473,106.8907700,981.40,268.60,295.20,281.90,8,30.28,0.24179,120,0,1,58");
+  //  internalSerial.print("CSV Formatted   = ");
+  internalSerial.println(formatted);
+  externalSerial.println(formatted);
+  externalSerialDebug.println(formatted);
+  internalSerial.println();
 }
 
 
 void sendPacket(byte *packet, byte len) {
   for (byte i = 0; i < len; i++)
   {
-    ss.write(packet[i]); // GPS is HardwareSerial
+    gpsSerial.write(packet[i]); // GPS is HardwareSerial
   }
 }
 
