@@ -1,9 +1,11 @@
-#define inclinometer  Serial1
-String terima;
+#define inclinometer  Serial2
+#define outputSerial Serial
+char terima[28];
 
 void setup() {
+  outputSerial.begin(115200);
   inclinometer.begin(9600);
-  
+
 }
 
 void loop() {
@@ -11,12 +13,17 @@ void loop() {
   delay(500);
 }
 
-void inclinometerangle(){
+void inclinometerangle() {
   inclinometer.write(0x77);
   inclinometer.write(0x04);
   inclinometer.write(0x00);
   inclinometer.write(0x04);
   inclinometer.write(0x08);
-  terima = inclinometer.read();
-  Serial.println(terima);
+  int i;
+  if (inclinometer.available()) {
+    terima[i] = inclinometer.read();
+    i++;
   }
+  outputSerial.print("from inclinometer : ");
+  outputSerial.println(terima);
+}

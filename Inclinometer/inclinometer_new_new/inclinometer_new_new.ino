@@ -22,7 +22,7 @@ void loop() {
 
 //    recvWithEndMarker();
 //    showNewData();
-Serial2.println("test");
+//Serial2.println("test");
 delay(200);
 }
 
