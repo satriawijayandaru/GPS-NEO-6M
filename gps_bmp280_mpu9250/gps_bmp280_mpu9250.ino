@@ -52,9 +52,6 @@ void setup() {
   externalSerialDebug.begin(SerialBaud);
   gpsSerial.begin(GPSBaud);
   internalSerial.println("GPS START");
-
-
-  
   Wire.begin();
   mpu.setup(0x68);
   pinMode(13, OUTPUT);
@@ -83,7 +80,6 @@ void setup() {
   //  mpu.printCalibration();
   loadCalibration();
   internalSerial.println("GPS Positioning");
-  externalSerial.println("GPS Positioning");
   //  delay(2000);
 }
 
