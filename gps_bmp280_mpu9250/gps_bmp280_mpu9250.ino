@@ -92,16 +92,16 @@ void setup() {
   //  mpu.printCalibration();
   //  loadCalibration();
   internalSerial.println("GPS Positioning");
-  //  externalSerial.println("BOOTING UP");
+    externalSerial.println("BOOTING UP");
   //  delay(2000);
 }
 
 void loop() {
 
   GPSgetData();
-  if (gps.hdop.value() == 9999) {
+  if (gps.hdop.value() > 200) {
     dataPreparation();
-    delay(100);
+    delay(50);
   }
 
 }
@@ -249,7 +249,6 @@ void dataPreparation() {
     mpuYaw = (mpu.getYaw());
   }
 
-
   coordinateCSV += plusminLat;
   coordinateCSV += degLat;
   coordinateCSV += ",";
@@ -259,7 +258,6 @@ void dataPreparation() {
   coordinateCSV += degLng;
   coordinateCSV += ",";
   coordinateCSV += bilionthsLng;
-
 
   coordinateGMaps += coordinateLat;
   coordinateGMaps += ",";
@@ -315,6 +313,9 @@ void sendSerialData() {
       Serial.print("*");
     }
     internalSerial.println();
+    Serial.print("Signal Strength = ");
+    double gpsSignalStrength = ((gps.satellites.value() / 7));
+    Serial.println(gpsSignalStrength);
     internalSerial.println("===================================================================");
   }
   internalSerial.println();
@@ -371,7 +372,6 @@ void sendSerialData() {
   internalSerial.println();
 }
 
-
 void sendPacket(byte *packet, byte len) {
   for (byte i = 0; i < len; i++)
   {
@@ -409,17 +409,12 @@ void errorBlink() {
   unsigned long currentErrorMillis = millis();
   if (isError == 1) {
     if (currentErrorMillis - errorBlinkMillis  >= errorBlinkInterval) {
-      // save the last time you blinked the LED
       errorBlinkMillis  = currentErrorMillis;
-
-      // if the LED is off turn it on and vice-versa:
       if (ledState == LOW) {
         ledState = HIGH;
       } else {
         ledState = LOW;
       }
-
-      // set the LED with the ledState of the variable:
       digitalWrite(ledPin, ledState);
     }
   }
