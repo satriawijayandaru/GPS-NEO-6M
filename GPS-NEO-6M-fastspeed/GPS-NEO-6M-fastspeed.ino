@@ -10,14 +10,14 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 
 // The serial connection to the GPS device
 //SoftwareSerial ss(RXPin, TXPin);
-#define ss Serial3
+#define ss Serial2
 
 void setup(){
   Serial.begin(9600);
   delay(1000);
   Serial.println("GPS START");
   ss.begin(GPSBaud);
-  changeFrequency();
+//  changeFrequency();
   delay(100); 
   ss.flush();
   lcd.init(); 
